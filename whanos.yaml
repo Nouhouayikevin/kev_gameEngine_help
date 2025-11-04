@@ -1,9 +1,0 @@
-deployment:
-  replicas: 3              # → 3 pods créés
-  resources:               # → Limites de ressources appliquées
-    limits:
-      memory: "128M"
-    requests:
-      memory: "64M"
-  ports:                   # → Service NodePort créé
-    - 3000
