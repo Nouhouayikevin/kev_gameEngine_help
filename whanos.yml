@@ -1,4 +1,5 @@
 deployment:
+  port: 8080
   replicas: 3
   resources:
     limits:
