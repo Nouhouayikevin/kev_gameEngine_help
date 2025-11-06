@@ -1,12 +1,9 @@
 deployment:
-  port: 8080
   replicas: 3
   resources:
     limits:
-      cpu: "500m"
-      memory: "512Mi"
+      memory: "128M"
     requests:
-      cpu: "250m"
-      memory: "256Mi"
+      memory: "64M"
   ports:
     - 3000
