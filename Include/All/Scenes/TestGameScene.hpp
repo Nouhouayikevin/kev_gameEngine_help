@@ -40,5 +40,5 @@ private:
 public:
     void init(GameEngine& context) override;
     void update(GameEngine& context, float delta_time) override;
-    void render(GameEngine& context, float delta_time) override;
+    void render(GameEngine& context) override;
 };

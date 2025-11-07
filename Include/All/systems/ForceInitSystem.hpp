@@ -10,7 +10,6 @@
 #include "../Component.hpp"
 #include "../../GameEngine_Include/core/GameEngine.hpp"
 #include <iostream>
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 
 /**
  * @brief Système d'initialisation de la Force
@@ -81,8 +80,4 @@ public:
             _initialized = true;
         }
     }
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(ForceInitSystem, "ForceInitSystem")
 };

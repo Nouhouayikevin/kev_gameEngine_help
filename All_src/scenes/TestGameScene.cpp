@@ -30,45 +30,43 @@ void TestGameScene::init(GameEngine& gameSceneEngine)
 
     // Les composants sont maintenant enregistrés automatiquement dans le constructeur du Registry
 
-    // Définir le registre par défaut pour les appels Lua
-    gameSceneEngine.getScriptingManager().setDefaultRegisterGroup(group);
-    
-    // ========== GROUPE UPDATE (LOGIQUE) - Thread principal ==========
-    registry.add_system("logic", PlayerControlSystem(group), 60.0f, true);
-    registry.add_system("logic", PlayerShootingSystem(group), 60.0f, true);
-    registry.add_system("logic", AISystem(group), 60.0f, true);
-    registry.add_system("logic", EnemyShootingSystem(group), 60.0f, true);
-    registry.add_system("logic", WeaponSystem(group), 60.0f, true);
-    registry.add_system("logic", PowerUpSystem(group), 60.0f, true);
-    registry.add_system("logic", LifespanSystem(group), 60.0f, true);
-    registry.add_system("logic", DeathSystem(group), 60.0f, true);
-    registry.add_system("logic", SaveLoadSystem(group), 60.0f, true);
-    
-    registry.add_system("physic", MovementSystem(group), 60.0f, true);
-    registry.add_system("physic", CollisionSystem(group), 60.0f, true);
-    registry.add_system("physic", OffScreenDeathSystem(group), 60.0f, true);
-    
-    registry.add_system("force", ForceInitSystem(group), 60.0f, true);
-    registry.add_system("force", ForceSystem(group), 60.0f, true);
-    registry.add_system("force", ForceControlSystem(group), 60.0f, true);
-    registry.add_system("force", ForceCollisionSystem(group), 60.0f, true);
-    
-    registry.add_system("music", SoundSystem(group), 60.0f, true);
-    registry.add_system("music", MusicSystem(group), 60.0f, true);
-    
-    // ========== GROUPE RENDER (AFFICHAGE) - Thread principal ==========
-    // Ces systèmes seront appelés dans render() APRÈS window.clear()
-    registry.add_system("render", AnimationSystem(group), 60.0f, false);
-    registry.add_system("render", ParallaxSystem(group), 60.0f, false);
-    registry.add_system("render", HealthBarSystem(group), 60.0f, false);
-    registry.add_system("render", RenderSystem(group), 160.0f, false);  // RenderSystem EN DERNIER
+    // Enregistrer les systèmes
+    registry.add_system("update", PlayerControlSystem(group));
+    registry.add_system("update", MovementSystem(group));
+    registry.add_system("update", AISystem(group));
+    registry.add_system("update", EnemyShootingSystem(group));
+    registry.add_system("update", CollisionSystem(group));
+    registry.add_system("update", AnimationSystem(group));
+    registry.add_system("update", ParallaxSystem(group));
+    registry.add_system("update", HealthBarSystem(group));
+    registry.add_system("update", SoundSystem(group));
+    registry.add_system("update", MusicSystem(group));
+    registry.add_system("update", PlayerShootingSystem(group));
 
-    registry.add_system("script", ScriptSystem(group), 60.0f, true);
-    std::cout << "✅ Systems configured: 'update' group (21 systems) + 'render' group (4 systems)" << std::endl;
+    // Force Systems 🔵
+    registry.add_system("update", ForceInitSystem(group));  // S'exécute une fois pour lier la Force au joueur
+    registry.add_system("update", ForceSystem(group));
+    registry.add_system("update", ForceControlSystem(group));
+    registry.add_system("update", ForceCollisionSystem(group));
+    
+    // Cleanup System 🧹
+    registry.add_system("update", OffScreenDeathSystem(group));  // Détruit les entités hors écran
+
+    registry.add_system("update", WeaponSystem(group));
+    registry.add_system("update", PowerUpSystem(group));
+    registry.add_system("update", LifespanSystem(group));
+    
+    registry.add_system("render", RenderSystem(group));
+    registry.add_system("update", DeathSystem(group));
+
+    registry.add_system("update", SaveLoadSystem(group));
+    
+    registry.add_system("update", ScriptSystem(group));
+    // registry.add_system("update", BossCollisionSystem(group));
 
     levelManager.set_register_group(group);
-    levelManager.load("Config/levels/level_1.json");  // 🎮 TEST DU BOSS
-    // levelManager.load("Config/levels/test_powerups.json");  // 🎮 TEST DES POWERUPS
+    // levelManager.load("Config/levels/level_1.json");  // 🎮 TEST DU BOSS
+    levelManager.load("Config/levels/test_powerups.json");  // 🎮 TEST DES POWERUPS
     // levelManager.load("Config/levels/test_projectiles_only.json");
     
     std::cout << "TestGameScene Initialized." << std::endl;
@@ -86,6 +84,7 @@ void TestGameScene::update(GameEngine& gameSceneEngine, float delta_time)
 
     } else {
         // En mode normal ou enregistrement, on exécute toute la logique de jeu.
+        registry.run_systems("update", gameSceneEngine, delta_time);
         gameSceneEngine.getLevelManager().update(delta_time, group);
 
         // Si on est en mode enregistrement, on dit au manager de prendre sa photo
@@ -94,14 +93,10 @@ void TestGameScene::update(GameEngine& gameSceneEngine, float delta_time)
             replay_manager.update(delta_time);
         }
     }
-    
 }
 
-void TestGameScene::render(GameEngine& gameEngine, float delta_time)
+void TestGameScene::render(GameEngine& gameEngine)
 {
     auto &registry = gameEngine.getRegistry(group);
-
-    registry.run_system_group("render", gameEngine, delta_time);
-
+    registry.run_systems("render",gameEngine, 0.0f);
 }
-

@@ -10,7 +10,6 @@
 #include "../Component.hpp"
 #include "../../GameEngine_Include/core/GameEngine.hpp"
 #include <string>
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 
 class ForceControlSystem : public ISystem {
     std::string _registerGroup;
@@ -159,8 +158,4 @@ public:
             _toggle_key_was_down = false;
         }
     }
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(ForceControlSystem, "ForceControlSystem")
 };

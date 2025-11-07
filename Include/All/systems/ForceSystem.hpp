@@ -11,7 +11,6 @@
 #include "../../GameEngine_Include/core/GameEngine.hpp"
 #include <string>
 #include <cmath>
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 
 class ForceSystem : public ISystem {
     std::string _registerGroup;
@@ -175,8 +174,4 @@ public:
             }
         }
     }
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(ForceSystem, "ForceSystem")
 };

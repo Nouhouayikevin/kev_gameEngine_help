@@ -17,7 +17,6 @@
 #include "../Component.hpp"
 #include "../../GameEngine_Include/core/GameEngine.hpp"
 #include <string>
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 
 class DeathSystem : public ISystem {
 std::string _registerGroup;
@@ -40,8 +39,4 @@ public:
             registry.kill_entity(e);
         }
     }
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(DeathSystem, "DeathSystem")
 };

@@ -61,7 +61,7 @@ void OfflineApplication::run() {
             window.close();
         engine->getSceneManager().update_current(*engine, dt);
         window.clear();
-        engine->getSceneManager().render_current(*engine, dt);
+        engine->getSceneManager().render_current(*engine);
         window.display();
     }
     std::cout << "Offline game loop finished." << std::endl;

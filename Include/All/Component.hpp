@@ -10,7 +10,6 @@
 #include <functional>
 #include <map>
 #include "../GameEngine_Include/core/json.hpp"
-#include <sol/sol.hpp>
 
 using json = nlohmann::json;
 
@@ -116,15 +115,11 @@ using json = nlohmann::json;
             
                 enum class OwnerType { PLAYER, ENEMY };
 
-                enum class ProjectileType { SIMPLE, CHARGED, UNKNOWN };
-
                 struct MissileTag {
                     OwnerType owner;
                     size_t owner_id; // L'ID de l'entité qui a tiré
-                    ProjectileType projectile_type; // Type de projectile (simple ou charged)
 
-                    MissileTag(OwnerType own_type, size_t own_id, ProjectileType proj_type = ProjectileType::UNKNOWN) 
-                        : owner(own_type), owner_id(own_id), projectile_type(proj_type) {}
+                    MissileTag(OwnerType own_type, size_t own_id) : owner(own_type), owner_id(own_id) {}
                 };
             
                 struct ParallaxLayer {
@@ -216,52 +211,8 @@ using json = nlohmann::json;
                 struct Script {
                     std::string script_path;
                     bool is_initialized = false;
-                    sol::environment env;
-                    sol::table self_table;
 
-                    
-                    // --- CONSTRUCTEUR PRINCIPAL ---
-                    Script(const std::string& path, sol::state_view lua) 
-                    : script_path(path), 
-                    is_initialized(false),
-                    env(lua, sol::create, lua.globals()),
-                    self_table(lua.create_table_with("__is_script_self_table", true))
-                    {}
-
-                    // --- GESTION DE LA COPIE ET DU DÉPLACEMENT ---
-                    Script(const Script& other)
-                        : script_path(other.script_path),
-                        is_initialized(other.is_initialized),
-                        env(other.env),
-                        self_table(other.self_table)
-                    {}
-
-                    Script& operator=(const Script& other) {
-                        if (this != &other) {
-                            script_path = other.script_path;
-                            is_initialized = other.is_initialized;
-                            env = other.env;
-                            self_table = other.self_table;
-                        }
-                        return *this;
-                    }
-
-                    Script(Script&& other) noexcept
-                        : script_path(std::move(other.script_path)),
-                        is_initialized(other.is_initialized),
-                        env(std::move(other.env)),
-                        self_table(std::move(other.self_table))
-                    {}
-
-                    Script& operator=(Script&& other) noexcept {
-                        if (this != &other) {
-                            script_path = std::move(other.script_path);
-                            is_initialized = other.is_initialized;
-                            env = std::move(other.env);
-                            self_table = std::move(other.self_table);
-                        }
-                        return *this;
-                    }
+                    Script(const std::string& path) : script_path(path) {}
                 };
 
                 // === FORCE (R-Type iconic mechanic) ===

@@ -9,37 +9,31 @@
 #include "../../Include/GameEngine_Include/core/GameEngine.hpp"
 #include "../../Include/GameEngine_Include/core/LuaEntity.hpp"
 #include "../../Include/All/Component.hpp"
-
 ScriptingManager::ScriptingManager(GameEngine& engine) : _engine(engine)
 {
     _lua.open_libraries(sol::lib::base,
                         sol::lib::math,
                         sol::lib::string,
-                        sol::lib::table,
-                        sol::lib::io);
-
+                        sol::lib::table);
+    
     _lua.new_usertype<LuaEntity>("LuaEntity",
         "setPosition", &LuaEntity::setPosition,
         "getPosition", &LuaEntity::getPosition,
         "setVelocity", &LuaEntity::setVelocity,
         "getVelocity", &LuaEntity::getVelocity,
-        "get_velocity", &LuaEntity::get_velocity,
         "getHealth", &LuaEntity::getHealth,
-        "get_health", &LuaEntity::get_health,
-        "getId", &LuaEntity::getId,
-        "setScale", &LuaEntity::setScale
+        "getId", &LuaEntity::getId
     );
 
     sol::table engine_api = _lua.create_named_table("engine");
 
     engine_api["spawn_from_archetype"] = [this](const std::string& archetype, float x, float y) {
-        // Utiliser le registre par défaut du ScriptingManager
-        Entity new_entity = _engine.spawn_from_archetype(archetype, _default_register_group, Component::Core::Position{x, y});
+        Entity new_entity = _engine.spawn_from_archetype(archetype, "default", Component::Core::Position{x, y});
         return static_cast<size_t>(new_entity);
     };
     
     engine_api["get_all_player_positions"] = [this]() -> sol::object {
-        auto& registry = _engine.getRegistry(_default_register_group);
+        auto& registry = _engine.getRegistry();
         auto& players = registry.get_components<Component::Gameplay::PlayerTag>();
         auto& positions = registry.get_components<Component::Core::Position>();
         
@@ -71,15 +65,6 @@ ScriptingManager::ScriptingManager(GameEngine& engine) : _engine(engine)
             }
         }
         return sol::nil;
-    };
-
-    engine_api["set_velocity"] = [this](size_t entity_id, float dx, float dy) {
-        auto& registry = _engine.getRegistry(_default_register_group);
-        auto& velocities = registry.get_components<Component::Core::Velocity>();
-        if (entity_id < velocities.size() && velocities[entity_id]) {
-            velocities[entity_id]->dx = dx;
-            velocities[entity_id]->dy = dy;
-        }
     };
 }
 

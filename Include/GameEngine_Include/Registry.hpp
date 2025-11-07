@@ -21,10 +21,6 @@
 #include <optional>
 #include <string>
 #include <utility>
-#include <thread>
-#include <atomic>
-#include <chrono>
-#include <mutex>
 
 
 
@@ -126,12 +122,6 @@ public:
         this->register_component<Component::Gameplay::Script>();
         this->register_component<Component::Gameplay::BossTag>();
         this->register_component<Component::Audio::Music>();
-        
-        _running = true;
-    }
-    
-    ~Registry() {
-        stop_all_systems();
     }
     // --- Gestion des Entités ---
     Entity spawn_entity() {
@@ -224,135 +214,16 @@ public:
     }
 
     template <typename T>
-    void add_system(const std::string& systemGroupName, T&& system, float update_frequency_hz = 60.0f, bool threaded = true) {
-        std::lock_guard<std::mutex> lock(_system_mutex);
-        
-        auto& group_data = _system_groups[systemGroupName];
+    void add_system(const std::string& systemsgroupName, T&& system) {
+        auto& system_list = _system_groups[systemsgroupName];
 
         if constexpr (std::is_base_of_v<ISystem, std::decay_t<T>>) {
-            group_data.systems.push_back(std::make_unique<std::decay_t<T>>(std::forward<T>(system)));
+
+            system_list.push_back(std::make_unique<std::decay_t<T>>(std::forward<T>(system)));
         } else {
-            group_data.systems.push_back(std::make_unique<SystemWrapper<T>>(std::forward<T>(system)));
+  
+            system_list.push_back(std::make_unique<SystemWrapper<T>>(std::forward<T>(system)));
         }
-        
-        // Si c'est le premier système de ce groupe
-        if (!group_data.thread_running && !group_data.is_main_thread) {
-            group_data.update_frequency = update_frequency_hz;
-            group_data.is_main_thread = !threaded;
-            
-            // Démarrer un thread uniquement si threaded = true
-            if (threaded) {
-                group_data.thread_running = true;
-                
-                std::cout << "[Registry] Starting thread for system group '" << systemGroupName 
-                          << "' at " << update_frequency_hz << " Hz" << std::endl;
-                
-                group_data.thread = std::thread(&Registry::system_loop, this, systemGroupName);
-            } else {
-                std::cout << "[Registry] System group '" << systemGroupName 
-                          << "' will run in MAIN THREAD at " << update_frequency_hz << " Hz" << std::endl;
-            }
-        }
-    }
-    
-    // Fonction pour exécuter manuellement les systèmes du thread principal
-    void run_main_thread_systems(GameEngine& engine, float dt) {
-        std::lock_guard<std::mutex> lock(_system_mutex);
-        
-        int systems_executed = 0;
-        for (auto& [group_name, group_data] : _system_groups) {
-            // Exécuter uniquement les groupes marqués comme "main thread"
-            if (group_data.is_main_thread && !group_data.paused) {
-                for (auto& system : group_data.systems) {
-                    try {
-                        system->run(engine, dt);
-                        systems_executed++;
-                    } catch (const std::exception& e) {
-                        std::cerr << "[Registry] Exception in main thread system (group '" 
-                                  << group_name << "'): " << e.what() << std::endl;
-                    }
-                }
-            }
-        }
-        
-        if (systems_executed == 0) {
-            std::cerr << "[Registry] WARNING: No main thread systems were executed!" << std::endl;
-        }
-    }
-    
-    // Fonction pour exécuter UN SEUL groupe spécifique (pour séparer update et render)
-    void run_system_group(const std::string& group_name, GameEngine& engine, float dt) {
-        std::lock_guard<std::mutex> lock(_system_mutex);
-        
-        if (_system_groups.count(group_name) == 0) {
-            std::cerr << "[Registry] ERROR: System group '" << group_name << "' does not exist!" << std::endl;
-            return;
-        }
-        
-        auto& group_data = _system_groups[group_name];
-        
-        if (!group_data.is_main_thread) {
-            std::cerr << "[Registry] WARNING: Trying to run threaded group '" << group_name << "' manually!" << std::endl;
-            return;
-        }
-        
-        if (group_data.paused) {
-            return;
-        }
-        
-        for (auto& system : group_data.systems) {
-            try {
-                system->run(engine, dt);
-            } catch (const std::exception& e) {
-                std::cerr << "[Registry] Exception in system (group '" << group_name << "'): " << e.what() << std::endl;
-            }
-        }
-    }
-    
-    // Fonction pour arrêter tous les threads de systèmes
-    void stop_all_systems() {
-        std::cout << "[Registry] Stopping all system threads..." << std::endl;
-        _running = false;
-        
-        for (auto& [name, group_data] : _system_groups) {
-            if (group_data.thread.joinable()) {
-                std::cout << "[Registry] Waiting for thread '" << name << "' to finish..." << std::endl;
-                group_data.thread.join();
-            }
-        }
-        std::cout << "[Registry] All system threads stopped." << std::endl;
-    }
-    
-    // Fonction pour mettre en pause/reprendre un groupe de systèmes
-    void pause_system_group(const std::string& systemGroupName) {
-        std::lock_guard<std::mutex> lock(_system_mutex);
-        if (_system_groups.count(systemGroupName)) {
-            _system_groups[systemGroupName].paused = true;
-            std::cout << "[Registry] System group '" << systemGroupName << "' paused." << std::endl;
-        }
-    }
-    
-    void resume_system_group(const std::string& systemGroupName) {
-        std::lock_guard<std::mutex> lock(_system_mutex);
-        if (_system_groups.count(systemGroupName)) {
-            _system_groups[systemGroupName].paused = false;
-            std::cout << "[Registry] System group '" << systemGroupName << "' resumed." << std::endl;
-        }
-    }
-    
-    // Fonction pour changer la fréquence de mise à jour d'un groupe
-    void set_system_frequency(const std::string& systemGroupName, float frequency_hz) {
-        std::lock_guard<std::mutex> lock(_system_mutex);
-        if (_system_groups.count(systemGroupName)) {
-            _system_groups[systemGroupName].update_frequency = frequency_hz;
-            std::cout << "[Registry] System group '" << systemGroupName 
-                      << "' frequency changed to " << frequency_hz << " Hz" << std::endl;
-        }
-    }
-    
-    // Setter pour la référence au GameEngine (nécessaire pour les threads)
-    void set_engine_reference(GameEngine* engine) {
-        _engine_ref = engine;
     }
 
     void set_name(Entity const &e, const std::string& name) {
@@ -381,6 +252,15 @@ public:
             return _entity_to_name.at(e);
         }
         return std::nullopt;
+    }
+
+
+    void run_systems(const std::string& systemsgroupName, GameEngine& engine, float dt) {
+        if (_system_groups.count(systemsgroupName)) {
+            for (auto& system : _system_groups.at(systemsgroupName)) {
+                system->run(engine, dt);
+            }
+        }
     }
 
     void clear() {
@@ -420,78 +300,6 @@ private:
     private:
         Func _func;
     };
-    
-    // Structure pour gérer un groupe de systèmes avec son thread
-    struct SystemGroup {
-        std::vector<std::unique_ptr<ISystem>> systems;
-        std::thread thread;
-        float update_frequency = 60.0f;  // Hz
-        bool thread_running = false;
-        bool paused = false;
-        bool is_main_thread = false;  // Si true, s'exécute dans le thread principal
-    };
-    
-    // Boucle d'exécution d'un groupe de systèmes dans son propre thread
-    void system_loop(const std::string& group_name) {
-        std::cout << "[Registry] Thread for '" << group_name << "' started." << std::endl;
-        
-        while (_running) {
-            auto start_time = std::chrono::high_resolution_clock::now();
-            
-            // Récupérer les données du groupe de manière thread-safe
-            float frequency;
-            bool is_paused;
-            {
-                std::lock_guard<std::mutex> lock(_system_mutex);
-                if (!_system_groups.count(group_name)) break;
-                
-                auto& group_data = _system_groups[group_name];
-                frequency = group_data.update_frequency;
-                is_paused = group_data.paused;
-            }
-            
-            // Si le groupe est en pause, attendre
-            if (is_paused) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                continue;
-            }
-            
-            // Calculer le delta time
-            float dt = 1.0f / frequency;
-            
-            // Exécuter tous les systèmes du groupe
-            {
-                std::lock_guard<std::mutex> lock(_system_mutex);
-                if (_system_groups.count(group_name)) {
-                    auto& group_data = _system_groups[group_name];
-                    
-                    // Note: On doit passer une référence au GameEngine
-                    // Pour l'instant on utilise un pointeur global (à améliorer)
-                    if (_engine_ref) {
-                        for (auto& system : group_data.systems) {
-                            try {
-                                system->run(*_engine_ref, dt);
-                            } catch (const std::exception& e) {
-                                std::cerr << "[Registry] Exception in system (group '" 
-                                          << group_name << "'): " << e.what() << std::endl;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Calculer le temps de sleep pour maintenir la fréquence
-            auto end_time = std::chrono::high_resolution_clock::now();
-            auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-            auto target_duration = std::chrono::microseconds(static_cast<long long>(1000000.0f / frequency));
-            
-            if (elapsed < target_duration) {
-                std::this_thread::sleep_for(target_duration - elapsed);
-            }
-        }
-        
-        std::cout << "[Registry] Thread for '" << group_name << "' stopped." << std::endl;
-    }
 
     
     std::unordered_map<std::type_index, std::function<void(Entity)>> _component_erasers;
@@ -501,14 +309,9 @@ private:
     std::vector<std::unique_ptr<ISystem>> _systems;
     std::vector<std::unique_ptr<ISystem>> _update_system;
     std::vector<std::unique_ptr<ISystem>> _render_system;
-    std::unordered_map<std::string, SystemGroup> _system_groups;
+    std::unordered_map<std::string, std::vector<std::unique_ptr<ISystem>>> _system_groups;
     std::vector<Entity> _free_entities;
     size_t _next_entity_id = 0;
-    
-    // Gestion multi-threading
-    std::atomic<bool> _running;
-    std::mutex _system_mutex;
-    GameEngine* _engine_ref = nullptr;  // Référence au moteur (doit être set par le GameEngine)
 };
 
 

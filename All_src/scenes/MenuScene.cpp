@@ -79,11 +79,11 @@ void MenuScene::init(GameEngine& gameSceneEngine)
 void MenuScene::update(GameEngine& gameSceneEngine, float delta_time)
 {
     auto& registry = gameSceneEngine.getRegistry(group);
-    registry.run_system_group("update", gameSceneEngine, delta_time);
+    registry.run_systems("update", gameSceneEngine, delta_time);
 }
 
-void MenuScene::render(GameEngine& gameEngine, float delta_time)
+void MenuScene::render(GameEngine& gameEngine)
 {
     auto& registry = gameEngine.getRegistry(group);
-    registry.run_system_group("render", gameEngine, delta_time);
+    registry.run_systems("render", gameEngine, 0.0f);
 }

@@ -11,7 +11,6 @@
 #include "../../GameEngine_Include/core/GameEngine.hpp"
 #include "../interfaces/ISound.hpp"
 #include <string>
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 
 class SoundSystem : public ISystem {
 std::string _registerGroup;
@@ -28,8 +27,4 @@ public:
             }
         }
     }
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(SoundSystem, "SoundSystem")
 };

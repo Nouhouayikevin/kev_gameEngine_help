@@ -9,7 +9,6 @@
 #include "../interfaces/ISystem.hpp"
 #include "../Component.hpp"
 #include "../../GameEngine_Include/core/GameEngine.hpp"
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 #include <string>
 
 class PlayerControlSystem : public ISystem {
@@ -53,8 +52,4 @@ public:
             }
         }
     }
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(PlayerControlSystem, "PlayerControlSystem")
 };

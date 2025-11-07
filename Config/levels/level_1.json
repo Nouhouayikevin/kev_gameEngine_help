@@ -11,18 +11,17 @@
     { "time": 0.0, "action": "SPAWN", "archetype": "audio.background_music_level1", "pos": [0, 0] },
     { "time": 0.0, "action": "SPAWN", "archetype": "audio.background_music_level1", "pos": [0, 0] },
 
-    { "time": 2.0, "action": "SPAWN", "archetype": "enemies.bydos_default", "pos": [1300, 200] },
-    { "time": 2.5, "action": "SPAWN", "archetype": "enemies.bydos_default", "pos": [1300, 500] },
-    { "time": 4.0, "action": "SPAWN", "archetype": "enemies.bydos_spread", "pos": [1300, 350] },
+    { "time": 2.0, "action": "SPAWN", "archetype": "enemies.bydos_slave", "pos": [1300, 200] },
+    { "time": 2.5, "action": "SPAWN", "archetype": "enemies.bydos_slave", "pos": [1300, 500] },
+    { "time": 4.0, "action": "SPAWN", "archetype": "enemies.bydos_shooter", "pos": [1300, 350] },
 
-    { "time": 6.0, "action": "SPAWN", "archetype": "enemies.bydos_default", "pos": [1300, 100] },
-    { "time": 6.0, "action": "SPAWN", "archetype": "enemies.bydos_default", "pos": [1300, 600] },
+    { "time": 6.0, "action": "SPAWN", "archetype": "enemies.bydos_slave", "pos": [1300, 100] },
+    { "time": 6.0, "action": "SPAWN", "archetype": "enemies.bydos_slave", "pos": [1300, 600] },
     
-    { "time": 8.5, "action": "SPAWN", "archetype": "enemies.bydos_spread", "pos": [1300, 200] },
-    { "time": 8.5, "action": "SPAWN", "archetype": "enemies.bydos_spread", "pos": [1300, 500] },
+    { "time": 8.5, "action": "SPAWN", "archetype": "enemies.bydos_shooter", "pos": [1300, 200] },
+    { "time": 8.5, "action": "SPAWN", "archetype": "enemies.bydos_shooter", "pos": [1300, 500] },
     
-    { "time": 15.0, "action": "SPAWN", "archetype": "bosses.black_phantom", "pos": [1300, 300] },
-    
+    { "time": 15.0, "action": "SPAWN", "archetype": "bosses.guardian_phase1", "pos": [1300, 300] },
 
     { "time": 20.0, "action": "VICTORY" }
   ]

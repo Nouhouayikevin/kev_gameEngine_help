@@ -19,7 +19,7 @@ private:
 public:
     void init(GameEngine& engine) override;
     void update(GameEngine& engine, float delta_time) override;
-    void render(GameEngine& engine, float delta_time) override;
+    void render(GameEngine& engine) override;
 };
 
 #endif // MENUSCENE_HPP

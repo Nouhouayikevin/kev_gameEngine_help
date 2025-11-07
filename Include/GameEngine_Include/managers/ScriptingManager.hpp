@@ -17,15 +17,10 @@ class ScriptingManager {
     public:
         ScriptingManager(GameEngine& engine);
         sol::state& getLuaState();
-        
-        // Définir le registre utilisé par défaut pour les appels Lua
-        void setDefaultRegisterGroup(const std::string& group) { _default_register_group = group; }
-        const std::string& getDefaultRegisterGroup() const { return _default_register_group; }
 
     private:
         GameEngine& _engine;
         sol::state _lua;
-        std::string _default_register_group = "default";
 };
 
 #endif // SCRIPTINGMANAGER_HPP_

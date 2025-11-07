@@ -17,7 +17,7 @@ public:
     virtual ~IScene() = default;
     virtual void init(GameEngine& context) = 0;
     virtual void update(GameEngine& context, float delta_time) = 0;
-    virtual void render(GameEngine& context, float delta_time) = 0;
+    virtual void render(GameEngine& context) = 0;
 };
 
 #endif

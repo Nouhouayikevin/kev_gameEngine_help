@@ -11,7 +11,6 @@
 #include "../Component.hpp"
 #include "../../GameEngine_Include/core/GameEngine.hpp"
 #include <string>
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 
 /**
  * @brief Système de gestion de la musique
@@ -75,8 +74,4 @@ public:
             }
         }
     }
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(MusicSystem, "MusicSystem")
 };

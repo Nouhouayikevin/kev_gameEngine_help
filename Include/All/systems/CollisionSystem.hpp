@@ -12,7 +12,6 @@
 #include "../../GameEngine_Include/core/LuaEntity.hpp"
 #include <string>
 #include <iostream>
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 
 class CollisionSystem : public ISystem {
     std::string _registerGroup;
@@ -83,52 +82,20 @@ public:
 
                 if (collision) {
                     int damage_amount = missile_damage.amount;
-                    
-                    // Phase 3 Boss Immunity: Bosses in enraged phase (< 33% HP) are immune to simple projectiles
-                    bool is_boss = (t_idx < boss_tags.size() && boss_tags[t_idx]);
-                    bool is_simple_projectile = (missile_tags[m_idx]->projectile_type == Component::Gameplay::ProjectileType::SIMPLE);
-                    
-                    if (is_boss && is_simple_projectile) {
-                        float hp_percent = static_cast<float>(target_health.hp) / static_cast<float>(target_health.max_hp);
-                        
-                        // Phase 3 threshold: 33% HP remaining
-                        if (hp_percent <= 0.33f) {
-                            std::cout << "[CollisionSystem] Boss is in Phase 3 (HP: " << hp_percent * 100 << "%) - IMMUNE to simple projectile!" << std::endl;
-                            // Destroy the projectile but don't damage boss
-                            registry.add_component(Entity(m_idx, &registry), Component::Gameplay::Dead{});
-                            continue;  // Skip damage application
-                        }
-                    }
-                    
                     target_health.hp -= damage_amount;
 
                     registry.add_component(Entity(m_idx, &registry), Component::Gameplay::Dead{});
 
-                    // Appeler on_damage dans le script si présent
                     if (t_idx < scripts.size() && scripts[t_idx]) {
                         try {
-                            auto& script = *scripts[t_idx];
-                            // S'assurer que self.entity est à jour AVEC le bon registre
-                            script.self_table["entity"] = LuaEntity(gameEng, t_idx, _registerGroup);
-                            
-                            // Pass projectile type info to on_damage
-                            std::string projectile_type_str = "unknown";
-                            if (missile_tags[m_idx]->projectile_type == Component::Gameplay::ProjectileType::SIMPLE) {
-                                projectile_type_str = "simple";
-                            } else if (missile_tags[m_idx]->projectile_type == Component::Gameplay::ProjectileType::CHARGED) {
-                                projectile_type_str = "charged";
-                            }
-                            
-                            sol::function on_damage_func = script.env["on_damage"];
+                            auto& lua_state = gameEng.getScriptingManager().getLuaState();
+                            sol::function on_damage_func = lua_state["on_damage"];
                             if (on_damage_func.valid()) {
-                                std::cout << "[CollisionSystem] on_damage function found for entity " << t_idx << ", calling it with damage: " << damage_amount << " (type: " << projectile_type_str << ")" << std::endl;
-                                on_damage_func(script.self_table, damage_amount, projectile_type_str);
-                                std::cout << "[CollisionSystem] on_damage executed successfully" << std::endl;
-                            } else {
-                                std::cout << "[CollisionSystem] WARNING: on_damage function not found in script for entity " << t_idx << std::endl;
+                                LuaEntity self(gameEng, t_idx);
+                                on_damage_func(self, damage_amount);
                             }
                         } catch (const sol::error& e) {
-                            std::cout << "[CollisionSystem] LUA ERROR in on_damage: " << e.what() << std::endl;
+                            std::cerr << "LUA ERROR in on_damage: " << e.what() << std::endl;
                         }
                     }
 
@@ -255,8 +222,4 @@ public:
             }
         }
     }
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(CollisionSystem, "CollisionSystem")
 };

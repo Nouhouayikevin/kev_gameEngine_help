@@ -5,7 +5,6 @@
 #include <fstream>
 #include "../../GameEngine_Include/core/GameEngine.hpp"
 #include "../../GameEngine_Include/core/Serializer.hpp"
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 
 
 class SaveLoadSystem : public ISystem {
@@ -67,8 +66,4 @@ private:
     
     std::string _registerGroup;
     std::string _savePath;
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(SaveLoadSystem, "SaveLoadSystem")
 };

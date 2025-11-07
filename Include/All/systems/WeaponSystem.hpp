@@ -12,7 +12,6 @@
 #include <string>
 
 #include <cmath>
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -124,8 +123,4 @@ public:
             }
         }
     }
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(WeaponSystem, "WeaponSystem")
 };

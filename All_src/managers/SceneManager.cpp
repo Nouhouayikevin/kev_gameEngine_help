@@ -68,15 +68,14 @@ void SceneManager::update_current(GameEngine& context, float delta_time) {
  * @brief Gère le rendu graphique de la scène courante.
  *
  * Si une scène est actuellement active, sa méthode `render()` est appelée
- * pour dessiner ses éléments à l'écran, en lui passant le contexte et le delta_time.
+ * pour dessiner ses éléments à l'écran, en lui passant le contexte.
  *
  * @param context Le contexte du moteur, contenant notamment la fenêtre de rendu.
- * @param delta_time Le temps écoulé depuis la dernière frame.
  */
-void SceneManager::render_current(GameEngine& context, float delta_time) {
+void SceneManager::render_current(GameEngine& context) {
     // S'assure qu'il y a bien une scène active avant d'essayer de la dessiner.
     if (_current_scene) {
-        _current_scene->render(context, delta_time);
+        _current_scene->render(context);
     }
 }
 

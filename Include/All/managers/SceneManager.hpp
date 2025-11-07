@@ -20,7 +20,7 @@ public:
     void switch_to_scene(const std::string& name, GameEngine& context);
     void update_current(GameEngine& context, float delta_time);
     std::shared_ptr<IScene> get_current_scene() const;
-    void render_current(GameEngine& context, float delta_time);
+    void render_current(GameEngine& context);
 
 private:
     std::map<std::string, std::shared_ptr<IScene>> _scenes_map;

@@ -80,7 +80,7 @@ void TestApplication::run() {
 
         // 3. Rendu
         window.clear();
-        _scene_manager.render_current(_engine, dt);
+        _scene_manager.render_current(_engine);
         window.display();
     }
 }

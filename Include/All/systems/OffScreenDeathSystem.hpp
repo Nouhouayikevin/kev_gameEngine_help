@@ -10,7 +10,6 @@
 #include "../Component.hpp"
 #include "../../GameEngine_Include/core/GameEngine.hpp"
 #include <iostream>
-#include "../../GameEngine_Include/factories/SystemAutoRegister.hpp"
 
 /**
  * @brief Système de destruction des entités hors écran
@@ -97,8 +96,4 @@ public:
             }
         }
     }
-
-    
-    // ✨ AUTO-REGISTRATION MAGIQUE ✨
-    AUTO_REGISTER_SYSTEM(OffScreenDeathSystem, "OffScreenDeathSystem")
 };

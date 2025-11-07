@@ -37,59 +37,12 @@ class GameEngine {
             throw std::runtime_error("GameEngine: Failed to open archetypes file: " + path);
         }
         try {
-            json raw_archetypes = json::parse(f);
-            _archetypes = resolve_archetype_references(raw_archetypes);
+            _archetypes = json::parse(f);
             std::cout << "GameEngine: Archetypes loaded successfully." << std::endl;
         } catch (json::parse_error& e) {
             throw std::runtime_error("GameEngine: Failed to parse archetypes JSON: " + std::string(e.what()));
         }
     }
-
-private:
-    json resolve_archetype_references(const json& raw_json, int depth = 0) {
-        json resolved = json::object();
-        
-        for (auto& [key, value] : raw_json.items()) {
-            // Si la valeur est une string ET qu'on est au niveau racine (depth == 0),
-            // c'est potentiellement un chemin vers un fichier externe
-            if (value.is_string() && depth == 0) {
-                std::string file_path = value.get<std::string>();
-                std::cout << "GameEngine: Loading external archetype file '" << file_path << "' for group '" << key << "'..." << std::endl;
-                
-                std::ifstream external_file(file_path);
-                if (!external_file.is_open()) {
-                    throw std::runtime_error("GameEngine: Failed to open external archetype file: " + file_path);
-                }
-                
-                try {
-                    json external_content = json::parse(external_file);
-                    // On charge le contenu du fichier (sans récursion pour éviter les boucles infinies)
-                    // Les fichiers externes contiennent des définitions d'archétypes, pas d'autres références
-                    if (external_content.is_object()) {
-                        for (auto& [archetype_name, archetype_def] : external_content.items()) {
-                            resolved[key][archetype_name] = archetype_def;
-                        }
-                    } else {
-                        resolved[key] = external_content;
-                    }
-                } catch (json::parse_error& e) {
-                    throw std::runtime_error("GameEngine: Failed to parse external archetype file '" + file_path + "': " + std::string(e.what()));
-                }
-            } 
-            // Si c'est un objet, on le copie tel quel (pas de résolution récursive dans les archétypes)
-            else if (value.is_object()) {
-                resolved[key] = value;
-            }
-            // Sinon on copie tel quel
-            else {
-                resolved[key] = value;
-            }
-        }
-        
-        return resolved;
-    }
-
-public:
 
     Entity spawn_from_archetype(const std::string& archetype_path,std::string registerGroup = "default", std::optional<Component::Core::Position> override_pos = std::nullopt) {
         Registry& registry = getRegistry(registerGroup);
@@ -97,51 +50,23 @@ public:
         const json& archetype_def = find_archetype_def(archetype_path);
         Entity e = registry.spawn_entity();
 
-        std::cout << "[GameEngine] Spawning entity " << static_cast<size_t>(e) << " from archetype '" << archetype_path << "'" << std::endl;
-
-        // Si on a une position override, on l'applique immédiatement
-        bool position_overridden = false;
-        if (override_pos.has_value()) {
-            Component::Core::Position pos = override_pos.value();
-            std::cout << "[GameEngine] Override position: x=" << pos.x << ", y=" << pos.y << std::endl;
-            registry.add_component(e, std::move(pos));
-            position_overridden = true;
-        }
-
-        // Sauvegarder le composant Script pour l'ajouter EN DERNIER
-        json script_data;
-        bool has_script = false;
-
         if (archetype_def.contains("components")) {
-            // Première passe : ajouter tous les composants SAUF Script
             for (auto& [comp_name, comp_data] : archetype_def["components"].items()) {
-                // Si on a déjà override la position, on skip la Position de l'archetype
-                if (comp_name == "Position" && position_overridden) {
-                    continue;
-                }
-                
-                // On sauvegarde le Script pour plus tard
-                if (comp_name == "Script") {
-                    script_data = comp_data;
-                    has_script = true;
+                if (comp_name == "Position" && override_pos.has_value()) {
+                    Component::Core::Position &pos = override_pos.value();
+                    registry.add_component(e, std::move(pos));
                     continue;
                 }
                 
                 if (_component_factories.count(comp_name)) {
+                    // ON PASSE LE REGISTRE À L'USINE ICI
                     _component_factories.at(comp_name)(registry, e, comp_data);
                 } else {
                     std::cerr << "Warning: Factory for component '" << comp_name << "' not found." << std::endl;
                 }
             }
-
-            // Deuxième passe : ajouter le Script EN DERNIER si présent
-            if (has_script && _component_factories.count("Script")) {
-                std::cout << "[GameEngine] Adding Script component as last component for entity " << static_cast<size_t>(e) << std::endl;
-                _component_factories.at("Script")(registry, e, script_data);
-            }
         }
         
-        // Si aucune position n'a été définie (ni override ni archetype), on met (0, 0)
         if (!e.has_component<Component::Core::Position>()) {
             registry.add_component<Component::Core::Position>(e, {0.0f, 0.0f});
         }
@@ -184,10 +109,7 @@ private:
             e.add_component<Component::Core::Position>(Component::Core::Position(j.value("x", 0.0f), j.value("y", 0.0f)));
         };
         _component_factories["Velocity"] = [this](Registry& registry, Entity e, const json& j) {
-            float dx = j.value("dx", 0.0f);
-            float dy = j.value("dy", 0.0f);
-            std::cout << "[Velocity Factory] Entity " << static_cast<size_t>(e) << ": dx=" << dx << ", dy=" << dy << std::endl;
-            e.add_component<Component::Core::Velocity>(Component::Core::Velocity(dx, dy));
+            e.add_component<Component::Core::Velocity>(Component::Core::Velocity(j.value("dx", 0.0f), j.value("dy", 0.0f)));
         };
         _component_factories["Scale"] = [this](Registry& registry, Entity e, const json& j) {
             e.add_component<Component::Core::Scale>(Component::Core::Scale(j.value("width", 1.0f), j.value("height", 1.0f)));
@@ -203,10 +125,6 @@ private:
         //                         --- GAMEPLAY COMPONENTS ---
         // =========================================================================
         _component_factories["Health"] = [this](Registry& registry, Entity e, const json& j) {
-             int hp_value = j.value("hp", 1);
-    std::cout << "!!!!!! HEALTH FACTORY CALLED for entity ID " << static_cast<size_t>(e) 
-              << ". Creating Health component with HP = " << hp_value 
-              << " !!!!!!" << std::endl;
             e.add_component<Component::Gameplay::Health>(Component::Gameplay::Health(j.value("hp", 1), j.value("max_hp", 1)));
         };
         _component_factories["Damage"] = [this](Registry& registry, Entity e, const json& j) {
@@ -224,21 +142,9 @@ private:
         _component_factories["EnemyTag"] = [this](Registry& registry, Entity e, const json& j) {
             e.add_component<Component::Gameplay::EnemyTag>(Component::Gameplay::EnemyTag(j.value("type", "")));
         };
-        _component_factories["BossTag"] = [this](Registry& registry, Entity e, const json& j) {
-            e.add_component<Component::Gameplay::BossTag>(Component::Gameplay::BossTag());
-        };
         _component_factories["MissileTag"] = [this, owner_type_map](Registry& registry, Entity e, const json& j){
             std::string owner_str = j.value("owner", "PLAYER");
-            std::string projectile_type_str = j.value("projectile_type", "UNKNOWN");
-            
-            Component::Gameplay::ProjectileType proj_type = Component::Gameplay::ProjectileType::UNKNOWN;
-            if (projectile_type_str == "SIMPLE") {
-                proj_type = Component::Gameplay::ProjectileType::SIMPLE;
-            } else if (projectile_type_str == "CHARGED") {
-                proj_type = Component::Gameplay::ProjectileType::CHARGED;
-            }
-            
-            e.add_component<Component::Gameplay::MissileTag>(Component::Gameplay::MissileTag(owner_type_map.at(owner_str), 0, proj_type));
+            e.add_component<Component::Gameplay::MissileTag>(Component::Gameplay::MissileTag(owner_type_map.at(owner_str), 0)); // owner_id est dynamique, on met 0 par défaut
         };
         _component_factories["ParallaxLayer"] = [this](Registry& registry, Entity e, const json& j) {
             e.add_component<Component::Gameplay::ParallaxLayer>(Component::Gameplay::ParallaxLayer(j.value("scroll_speed", 0.0f)));
@@ -306,23 +212,11 @@ private:
             );
         };
 
-       _component_factories["Script"] = [this](Registry& registry, Entity e, const json& j) {
-            auto& lua_state = getScriptingManager().getLuaState();
-            std::string path = j.value("script_path", "");
-
-            if (path.empty()) {
-                throw std::runtime_error("Script component in archetype is missing a valid 'script_path'.");
-            }
-
-            std::cout << "[Script Factory] Creating Script component for entity " << static_cast<size_t>(e) << std::endl;
-            std::cout << "[Script Factory] Entity has Position: " << e.has_component<Component::Core::Position>() << std::endl;
-            std::cout << "[Script Factory] Entity has Velocity: " << e.has_component<Component::Core::Velocity>() << std::endl;
-            std::cout << "[Script Factory] Entity has Health: " << e.has_component<Component::Gameplay::Health>() << std::endl;
-
-            Component::Gameplay::Script script_component(path, lua_state);
-
-            registry.add_component(e, std::move(script_component));
+        _component_factories["Script"] = [this](Registry& registry, Entity e, const json& j) {
+            std::string script_path = j.value("script_path", "");
+            e.add_component<Component::Gameplay::Script>(script_path);
         };
+
         // =========================================================================
         //                         --- GRAPHICS COMPONENTS ---
         // =========================================================================
@@ -492,7 +386,6 @@ public:
     void createRegistry(const std::string& group) {
         if (_registries.find(group) == _registries.end()) {
             _registries[group];
-            _registries[group].set_engine_reference(this);
             std::cout << "GameEngine: Created new registry group '" << group << "'." << std::endl;
         }
     }
